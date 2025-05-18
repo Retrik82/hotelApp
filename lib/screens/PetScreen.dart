@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'TranslaterScreen.dart'; // Убедись, что этот файл существует
 
 class BotChatScreen extends StatefulWidget {
+  const BotChatScreen({super.key});
+
   @override
   State<BotChatScreen> createState() => _BotChatScreenState();
 }
@@ -101,11 +103,11 @@ class _BotChatScreenState extends State<BotChatScreen> {
                 SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _sendMessage,
-                  child: Icon(Icons.send),
                   style: ElevatedButton.styleFrom(
                     shape: CircleBorder(),
                     padding: EdgeInsets.all(12),
                   ),
+                  child: Icon(Icons.send),
                 ),
               ],
             ),

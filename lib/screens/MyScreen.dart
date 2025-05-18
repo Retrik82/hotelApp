@@ -8,7 +8,7 @@ class MyScreen extends StatefulWidget {
   final List<RoomBooking> bookedRooms;
   final Function(String) onCancelBooking;
 
-  const MyScreen({
+  const MyScreen({super.key, 
     required this.bookedRooms,
     required this.onCancelBooking,
   });
@@ -76,40 +76,49 @@ class _MyScreenState extends State<MyScreen> {
                   child: Text('Нет других броней'),
                 )
               else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: inactiveBookings.length,
-                  itemBuilder: (context, index) {
-                    final booking = inactiveBookings[index];
-                    return ListTile(
-                      leading: Icon(Icons.hotel, color: Colors.grey),
-                      title: Text('Номер ${booking.roomNumber}'),
-                      subtitle: Text(
-                          'с ${DateFormat('dd.MM.yyyy').format(booking.startDate)} '
-                          'по ${DateFormat('dd.MM.yyyy').format(booking.endDate)}'),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                          widget.onCancelBooking(booking.roomNumber);
-                          setState(() {
-                            // Убираем бронь после отмены из списка
-                            widget.bookedRooms.removeWhere((b) => b.roomNumber == booking.roomNumber);
-                          });
-                        },
-                        child: Text('Отменить бронь'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => RoomControlScreen(roomNumber: booking.roomNumber),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: inactiveBookings.length,
+                    itemBuilder: (context, index) {
+                      final booking = inactiveBookings[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200, // светло-серый фон
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        margin: EdgeInsets.symmetric(vertical: 4),
+                        child: ListTile(
+                          leading: Icon(Icons.hotel, color: Colors.grey),
+                          title: Text(
+                            'Номер ${booking.roomNumber}',
+                            style: TextStyle(color: Colors.black54),
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                          subtitle: Text(
+                            'с ${DateFormat('dd.MM.yyyy').format(booking.startDate)} '
+                            'по ${DateFormat('dd.MM.yyyy').format(booking.endDate)}',
+                            style: TextStyle(color: Colors.black45),
+                          ),
+                          trailing: ElevatedButton(
+                            onPressed: () {
+                              widget.onCancelBooking(booking.roomNumber);
+                              setState(() {
+                                widget.bookedRooms.removeWhere((b) => b.roomNumber == booking.roomNumber);
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: Text('Отменить'),
+                          ),
+                          // УБИРАЕМ onTap для блокировки перехода
+                          enabled: false, // также можно просто отключить весь ListTile
+                        ),
+                      );
+                    },
+                  ),
+
             ],
           ),
         ),

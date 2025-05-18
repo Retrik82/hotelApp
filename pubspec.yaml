@@ -28,17 +28,17 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-
-  flutter:  
+  flutter:
     sdk: flutter
+  protobuf: ^4.0.0
+  web_socket_channel: ^2.4.0
   intl: ^0.18.1
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  protoc_plugin: ^22.1.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -59,6 +59,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logoHotel.png
+    - assets/image.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

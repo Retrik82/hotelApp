@@ -5,6 +5,8 @@ import 'PetScreen.dart';
 import 'ProfileScreen.dart';
 
 class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
@@ -17,8 +19,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [];
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
     _screens.addAll([
       HomeScreen(
         bookedRooms: _bookedRooms,
@@ -47,8 +49,7 @@ void initState() {
       BotChatScreen(),
       ProfileScreen(),
     ]);
-
-}
+  }
 
   void _onPageChanged(int index) {
     setState(() {
@@ -67,23 +68,17 @@ void initState() {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.grey.shade100, Colors.grey.shade300],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      color: Color(0xFF1A2A44),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: PageView(
           controller: _pageController,
-          children: _screens,
           onPageChanged: _onPageChanged,
+          children: _screens,
         ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            color: Colors.indigo,
+            color: Color(0xFF1A2A44),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(16),
               topRight: Radius.circular(16),
@@ -104,11 +99,13 @@ void initState() {
             selectedItemColor: Colors.white,
             unselectedItemColor: Colors.white70,
             type: BottomNavigationBarType.fixed,
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
             items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Бронь'),
-              BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Номера'),
-              BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Питомец'),
-              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Профиль'),
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+              BottomNavigationBarItem(icon: Icon(Icons.menu), label: ''),
+              BottomNavigationBarItem(icon: Icon(Icons.pets), label: ''),
+              BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
             ],
           ),
         ),

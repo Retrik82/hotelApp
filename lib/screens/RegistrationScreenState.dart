@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'WelcomeScreen.dart';
 import 'MainScreen.dart';
+import 'NeuralSocketService.dart'; // Импорт NeuralSocketService
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -17,6 +18,58 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   String? _errorText;
+  bool _agreeToTerms = false;
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
+  late NeuralSocketService _socketService;
+
+  @override
+  void initState() {
+    super.initState();
+    _socketService = NeuralSocketService(
+      serverUrl: 'wss://hotelbackend-cd6n.onrender.com/ws',
+      onResponseReceived: (response) {
+        if (response.hasStatus()) {
+          if (response.status == Statuses.Ok) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => MainScreen()),
+            );
+          } else if (response.status == Statuses.Error) {
+            setState(() {
+              _errorText = 'Ошибка регистрации на сервере';
+            });
+          }
+        } else if (response.hasInfo() || response.hasState()) {
+          setState(() {
+            _errorText = 'Непредвиденный ответ от сервера';
+          });
+        }
+      },
+      onError: (error) {
+        setState(() {
+          _errorText = error;
+        });
+      },
+      onConnectionEstablished: () {
+        print('WebSocket connection established');
+      },
+    );
+    _socketService.connect();
+  }
+
+  @override
+  void dispose() {
+    _socketService.disconnect();
+    _surnameController.dispose();
+    _nameController.dispose();
+    _patronymicController.dispose();
+    _passportController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   void _register() {
     final surname = _surnameController.text.trim();
@@ -47,15 +100,36 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    // Здесь можно вызвать API регистрации или сохранить в локальной базе
+    if (!_agreeToTerms) {
+      setState(() => _errorText = 'Пожалуйста, согласитесь с условиями');
+      return;
+    }
 
     setState(() => _errorText = null);
 
-    // Переход на главный экран после регистрации
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => MainScreen()),
-    );
+    final command = DeviceCommand()
+      ..action = 'register'
+      ..surname = surname
+      ..name = name
+      ..patronymic = patronymic
+      ..passport = passport
+      ..email = email
+      ..password = password
+      ..confirmPassword = confirmPassword;
+
+    _socketService.sendCommand(command);
+  }
+
+  void _validateEmail(String email) {
+    if (email.isNotEmpty && !email.contains('@')) {
+      setState(() {
+        _errorText = 'Введите корректный email';
+      });
+    } else {
+      setState(() {
+        if (_errorText == 'Введите корректный email') _errorText = null; // Сбрасываем ошибку только для email
+      });
+    }
   }
 
   Widget _buildTextField({
@@ -63,77 +137,141 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     required String label,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
+    IconData? suffixIcon,
+    VoidCallback? onSuffixIconPressed,
+    ValueChanged<String>? onChanged, // Добавляем параметр для onChanged
   }) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      style: TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        labelStyle: TextStyle(color: Colors.white70, fontSize: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: Colors.orange, width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: Colors.orange, width: 2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: Colors.orangeAccent, width: 2),
+        ),
+        contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        suffixIcon: suffixIcon != null
+            ? IconButton(
+                icon: Icon(suffixIcon, color: Colors.white70),
+                onPressed: onSuffixIconPressed,
+              )
+            : null,
+        errorText: _errorText, // Отображаем ошибку под полем
       ),
+      onChanged: onChanged, // Применяем onChanged, если задан
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Регистрация'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => WelcomeScreen()),
-            );
-          },
-        ),
-      ),
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.indigo.shade100, Colors.indigo.shade300],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
+      backgroundColor: Color(0xFF1A2A44),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.app_registration, size: 80, color: Colors.indigo),
-                SizedBox(height: 24),
-                _buildTextField(controller: _surnameController, label: 'Фамилия'),
-                SizedBox(height: 16),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back, color: Colors.white, size: 30),
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => WelcomeScreen()),
+                        );
+                      },
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          'Регистрация',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.account_circle, color: Colors.white, size: 40),
+                  ],
+                ),
+                SizedBox(height: 40),
                 _buildTextField(controller: _nameController, label: 'Имя'),
+                SizedBox(height: 16),
+                _buildTextField(controller: _surnameController, label: 'Фамилия'),
                 SizedBox(height: 16),
                 _buildTextField(controller: _patronymicController, label: 'Отчество'),
                 SizedBox(height: 16),
-                _buildTextField(controller: _passportController, label: 'Серия и номер паспорта'),
-                SizedBox(height: 16),
                 _buildTextField(
                   controller: _emailController,
-                  label: 'Логин (Email)',
+                  label: 'Электронная почта',
                   keyboardType: TextInputType.emailAddress,
+                  onChanged: _validateEmail, // Вызываем действие при изменении текста
                 ),
                 SizedBox(height: 16),
                 _buildTextField(
                   controller: _passwordController,
-                  label: 'Пароль',
-                  obscureText: true,
+                  label: 'Введите пароль',
+                  obscureText: !_passwordVisible,
+                  suffixIcon: _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                  onSuffixIconPressed: () {
+                    setState(() => _passwordVisible = !_passwordVisible);
+                  },
                 ),
                 SizedBox(height: 16),
                 _buildTextField(
                   controller: _confirmPasswordController,
-                  label: 'Повторите пароль',
-                  obscureText: true,
+                  label: 'Подтвердите пароль',
+                  obscureText: !_confirmPasswordVisible,
+                  suffixIcon: _confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  onSuffixIconPressed: () {
+                    setState(() => _confirmPasswordVisible = !_confirmPasswordVisible);
+                  },
+                ),
+                SizedBox(height: 16),
+                _buildTextField(controller: _passportController, label: 'Серия и номер паспорта'),
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _agreeToTerms,
+                      onChanged: (value) {
+                        setState(() => _agreeToTerms = value ?? false);
+                      },
+                      checkColor: Colors.white,
+                      activeColor: Colors.orange,
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Ознакомлен и согласен с условиями и политикой конфиденциальности',
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      ),
+                    ),
+                  ],
                 ),
                 if (_errorText != null) ...[
                   SizedBox(height: 12),
-                  Text(_errorText!, style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                  Text(
+                    _errorText!,
+                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                  ),
                 ],
                 SizedBox(height: 28),
                 SizedBox(
@@ -141,12 +279,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   child: ElevatedButton(
                     onPressed: _register,
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
                     child: Text(
                       'Зарегистрироваться',
-                      style: TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),
                 ),
